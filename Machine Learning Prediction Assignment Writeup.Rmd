@@ -1,0 +1,170 @@
+---
+title: "Prediction Assignment Writeup"
+author: "Mark Brown"
+date: "September 13, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#Assignment Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+
+#Data
+
+The training data for this project are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+The data for this project come from this source: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har. Thank you for providing the data for this project.
+
+#Now for the analysis 
+##R Packages that we are using
+
+```{r}
+
+library(caret)
+library(rpart)
+library(tidyverse)
+library(randomForest)
+library(rpart.plot)
+library(corrplot)
+
+```
+
+##Downloading the data and cleaning the data
+
+```{r}
+train <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+test <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+training <- read.csv(url(train), na.strings = c("NA", "", "#DIV0!"))
+testing <- read.csv(url(test), na.strings = c("NA", "", "#DIV0!"))
+
+training<-training[,colSums(is.na(training)) == 0]
+testing <-testing[,colSums(is.na(testing)) == 0]
+```
+
+## maing sure the data is the same
+```{r}
+head(training)
+head(testing)
+
+str(training)
+str(testing)
+
+```
+
+## Dimension Reduction of the data
+
+```{r}
+
+training <- training[,8:dim(training)[2]]
+testing <- testing[,8:dim(testing)[2]]
+
+```
+
+
+## Seperating data into traing test and valadation (60% 20% 20%)
+
+```{r}
+set.seed(1)
+training1 <- createDataPartition(y = training$classe, p = 0.8, list = F)
+validation1 <- training[training1,]
+validation <- training[-training1,]
+Training_data1 <- createDataPartition(y = validation1$classe, p = 0.75, list = F)
+training_data2 <- validation1[Training_data1,]
+testing_data <- validation1[-Training_data1,]
+
+```
+
+## Exploring
+
+```{r}
+qplot(classe, fill = "4", data=training_data2, main="Distribution by classe")
+
+```
+
+#Building Modls
+##A Decision Tree Model
+
+```{r}
+model_tree <- rpart(classe ~ ., data=training_data2, method="class")
+rpart.plot(model_tree)
+
+
+prediction_tree <- predict(model_tree, testing_data, type="class")
+class_tree <- confusionMatrix(prediction_tree, testing_data$classe)
+class_tree
+
+```
+
+##A Random Forest Model
+
+```{r}
+
+model_forest <- randomForest(classe ~ ., data=training_data2, method="class")
+prediction_forest <- predict(model_forest, testing_data, type="class")
+random_forest <- confusionMatrix(prediction_forest, testing_data$classe)
+random_forest
+
+```
+
+# Predictions
+
+##Prediction Algorithms with confusion matrix
+
+```{r}
+
+prediction_tree <- predict(model_tree, testing_data, type="class")
+tree <- confusionMatrix(prediction_tree, testing_data$classe)
+tree
+
+prediction_forest <- predict(model_forest, newdata=testing_data)
+forest<-confusionMatrix(prediction_forest, testing_data$classe)
+forest
+
+```
+
+
+##We can see that the Random Forest Model is better than the Tree Model in this case
+
+# Conclusion
+
+Using the data we built both a decision tree and random forest model and due to the characteristics of the data we have found that between these two models a random forest gives a signficant advanatage. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
